@@ -1,0 +1,61 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_WITH_LEGEND()
+
+' Стейкхолдеры
+Person(businessUser, "Бизнес-пользователь", "Использует портал для построения отчётов")
+Person(operator, "Оператор клиники", "Работает с медицинскими данными через Power Builder")
+Person(externalUser, "Внешний партнёр", "Получает данные в рамках авторизованного доступа")
+
+' Системы
+System_Boundary(s1, "Медицинская система") {
+  Container(powerBuilder, "Power Builder Client", "Desktop App", "Клиентский интерфейс операторов")
+  Container(apiForPB, "API для Power Builder", "REST API", "Промежуточный слой доступа к данным")
+  Container(dataLake, "Data Lake", "Object Storage", "Хранилище неструктурированных данных (изображения, тексты)")
+  Container(dwh, "DWH", "SQL Server", "Хранилище структурированных исторических данных")
+  Container(aiServices, "AI-сервисы", "Python", "ИИ-обработка медицинских изображений и данных")
+}
+
+System_Boundary(s2, "Интеграционный слой") {
+  Container(bus, "Интеграционная шина", "Apache Camel", "Обеспечивает передачу данных между доменами")
+}
+
+System_Boundary(s3, "Финтех") {
+  Container(fintech, "Финтех-сервисы", "Go/Java", "Кредитование, платёжные сервисы, финансовая аналитика")
+}
+
+System_Boundary(s4, "Внутренние бизнес-сервисы") {
+  Container(internalServices, "Внутренние сервисы", "Разные", "Управление клиниками, бухгалтерия, HR и т.д.")
+}
+
+System_Boundary(s5, "Аналитика и BI") {
+  Container(biSystem, "BI-система", "Power BI", "Визуализация аналитики")
+  Container(dataPortal, "Портал данных", "Web App", "Портал самообслуживания для отчётности и аналитики")
+  Container(dataMarts, "Витрины данных", "ETL + Storage", "Агрегированные витрины по бизнес-доменам")
+  Container(semanticLayer, "Semantic Layer", "Data Virtualization", "Бизнес-логика и модель данных для BI")
+}
+
+' Взаимодействия
+Rel(operator, powerBuilder, "Использует")
+Rel(powerBuilder, apiForPB, "Работает через")
+Rel(apiForPB, dwh, "Получает данные из")
+Rel(apiForPB, dataLake, "Получает файлы/изображения из")
+
+Rel(aiServices, dataLake, "Сохраняет и извлекает данные")
+Rel(aiServices, bus, "Публикует метаданные/результаты")
+Rel(bus, dwh, "Передаёт структурированные данные")
+Rel(bus, dataLake, "Передаёт неструктурированные данные")
+Rel(bus, fintech, "Передаёт финансовые данные")
+Rel(bus, internalServices, "Передаёт внутренние данные")
+Rel(fintech, bus, "Публикует данные")
+Rel(internalServices, bus, "Публикует данные")
+
+' BI и аналитика
+Rel(dwh, dataMarts, "Передаёт агрегаты")
+Rel(dataMarts, semanticLayer, "Используются в")
+Rel(semanticLayer, biSystem, "Источник данных для")
+Rel(dataPortal, semanticLayer, "Строит отчёты через")
+Rel(businessUser, dataPortal, "Использует портал")
+Rel(externalUser, dataPortal, "Получает доступ через", "https")
+
+@enduml
